@@ -1,6 +1,7 @@
 # Compiler files
 cache/
 zkout/
+out/
 
 # Ignores development broadcast logs
 !/broadcast
