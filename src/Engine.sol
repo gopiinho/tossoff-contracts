@@ -2,7 +2,12 @@
 pragma solidity ^0.8.20;
 
 contract Engine {
-    event MatchCreated(address indexed creator, uint256 indexed amount, uint256 indexed deadline, uint256 matchId);
+    event MatchCreated(
+        address indexed creator,
+        uint256 indexed amount,
+        uint256 indexed deadline,
+        uint256 matchId
+    );
     event MatchFinished(uint256 indexed matchId, address winner);
 
     /* -------------------------------------------------------------------------- */
@@ -47,13 +52,26 @@ contract Engine {
      * @param   duration  Duration of match, after which if not joined by another player, the match will expire
      * @return  uint256  Id of the match
      */
-    function createMatch(uint256 amount, uint256 duration) public payable returns (uint256) {
+    function createMatch(
+        uint256 amount,
+        uint256 duration
+    ) public payable returns (uint256) {
         require(msg.value >= amount, "Invalid amount");
         require(duration >= 5 minutes, "Duration must be more than 5 minutes");
 
         uint256 deadline = block.timestamp + duration;
         uint256 matchId = activeMatches.length;
-        activeMatches.push(Match(msg.sender, address(0), address(0), matchId, amount, deadline, false));
+        activeMatches.push(
+            Match(
+                msg.sender,
+                address(0),
+                address(0),
+                matchId,
+                amount,
+                deadline,
+                false
+            )
+        );
 
         emit MatchCreated(msg.sender, amount, deadline, matchId);
         return matchId;
@@ -78,8 +96,16 @@ contract Engine {
         m.player2 = msg.sender;
 
         // temporary: convert to vrf randomness
-        uint256 result =
-            uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao, m.player1, m.player2))) % 2;
+        uint256 result = uint256(
+            keccak256(
+                abi.encodePacked(
+                    block.timestamp,
+                    block.prevrandao,
+                    m.player1,
+                    m.player2
+                )
+            )
+        ) % 2;
 
         address winner = result == 0 ? m.player1 : m.player2;
         m.winner = winner;
@@ -90,7 +116,7 @@ contract Engine {
         uint256 finalPayout = totalPot - fee;
 
         feeCollected += fee;
-        (bool sent,) = winner.call{value: finalPayout}("");
+        (bool sent, ) = winner.call{value: finalPayout}("");
         require(sent, "Failed to send winnings");
 
         emit MatchFinished(_id, winner);
@@ -104,19 +130,19 @@ contract Engine {
         require(p1 == msg.sender, "Not the creator");
         require(deadline < block.timestamp, "Already expired");
 
-        (bool sent,) = p1.call{value: m.amount}("");
+        (bool sent, ) = p1.call{value: m.amount}("");
         require(sent, "Failed to refund");
 
         m.isFinished = true;
     }
 
-    function claimFee() public {
+    function claimFee() external {
         require(msg.sender == feeRecipient, "Cannot claim");
 
         uint256 amount = feeCollected;
         feeCollected = 0;
 
-        (bool sent,) = feeRecipient.call{value: amount}("");
+        (bool sent, ) = feeRecipient.call{value: amount}("");
         require(sent, "Failed to send winnings");
     }
 }

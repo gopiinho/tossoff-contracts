@@ -12,7 +12,8 @@ contract EngineScript is Script {
     function run() public {
         vm.startBroadcast();
 
-        engine = new Engine();
+        address deployer = msg.sender;
+        engine = new Engine(deployer);
 
         vm.stopBroadcast();
     }
