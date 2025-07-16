@@ -5,8 +5,8 @@ contract Engine {
     event MatchCreated(
         address indexed creator,
         uint256 indexed amount,
-        uint256 indexed deadline,
-        uint256 matchId
+        uint256 indexed matchId,
+        uint256 deadline
     );
     event MatchFinished(uint256 indexed matchId, address winner);
 
