@@ -73,7 +73,7 @@ contract Engine {
             )
         );
 
-        emit MatchCreated(msg.sender, amount, deadline, matchId);
+        emit MatchCreated(msg.sender, amount, matchId, deadline);
         return matchId;
     }
 
@@ -82,7 +82,7 @@ contract Engine {
 
         Match storage m = activeMatches[_id];
 
-        require(msg.sender != m.player1);
+        require(msg.sender != m.player1, "Cannot join your own match!");
         require(!m.isFinished, "Match is already finished!");
         require(block.timestamp <= m.deadline, "Match expired");
         require(msg.value == m.amount, "Invalid entry");
