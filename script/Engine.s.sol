@@ -11,10 +11,8 @@ contract EngineScript is Script {
 
     function run() public {
         vm.startBroadcast();
-
-        address deployer = msg.sender;
-        engine = new Engine(deployer);
-
+        uint8 fee = 3;
+        engine = new Engine(fee);
         vm.stopBroadcast();
     }
 }

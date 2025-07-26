@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-contract Engine {
+import {Owned} from "solmate/auth/Owned.sol";
+
+contract Engine is Owned {
     event MatchCreated(
         address indexed creator,
         uint256 indexed amount,
         uint256 indexed matchId,
         uint256 deadline
     );
-    event MatchFinished(uint256 indexed matchId, address winner);
+    event MatchFinished(uint256 indexed matchId, address indexed winner);
 
     /* -------------------------------------------------------------------------- */
     /*                                     TYPES                                  */
@@ -26,20 +28,20 @@ contract Engine {
     /* -------------------------------------------------------------------------- */
     /*                                STATE VARIABLES                             */
     /* -------------------------------------------------------------------------- */
+    uint8 public fee;
+    uint8 public constant MAX_FEE = 3;
+
     uint256 public totalFlips;
 
     uint256 public feeCollected;
-    address public feeRecipient;
 
     Match[] internal activeMatches;
-
-    uint256 public constant FEE = 3;
 
     /* -------------------------------------------------------------------------- */
     /*                                 CONSTRUCTOR                                */
     /* -------------------------------------------------------------------------- */
-    constructor(address _owner) {
-        feeRecipient = _owner;
+    constructor(uint8 _fee) Owned(msg.sender) {
+        fee = _fee;
     }
 
     /* -------------------------------------------------------------------------- */
@@ -112,10 +114,10 @@ contract Engine {
         m.isFinished = true;
 
         uint256 totalPot = m.amount * 2;
-        uint256 fee = (totalPot * FEE) / 100;
-        uint256 finalPayout = totalPot - fee;
+        uint256 appFee = (totalPot * fee) / 100;
+        uint256 finalPayout = totalPot - appFee;
 
-        feeCollected += fee;
+        feeCollected += appFee;
         (bool sent, ) = winner.call{value: finalPayout}("");
         require(sent, "Failed to send winnings");
 
@@ -136,13 +138,11 @@ contract Engine {
         m.isFinished = true;
     }
 
-    function claimFee() external {
-        require(msg.sender == feeRecipient, "Cannot claim");
-
+    function claimFee() external onlyOwner {
         uint256 amount = feeCollected;
         feeCollected = 0;
 
-        (bool sent, ) = feeRecipient.call{value: amount}("");
+        (bool sent, ) = owner.call{value: amount}("");
         require(sent, "Failed to send winnings");
     }
 }
