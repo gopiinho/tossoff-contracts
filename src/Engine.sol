@@ -8,8 +8,7 @@ contract Engine is Owned {
     event MatchCreated(
         address indexed creator,
         uint256 indexed amount,
-        uint256 indexed matchId,
-        uint256 deadline
+        uint256 indexed matchId
     );
     event MatchFinished(uint256 indexed matchId, address indexed winner);
 
@@ -22,7 +21,6 @@ contract Engine is Owned {
         address winner;
         uint256 id;
         uint256 amount;
-        uint256 deadline;
         bool isFinished;
     }
 
@@ -55,31 +53,17 @@ contract Engine is Owned {
      * @notice  Creates a new match
      * @dev     Match is created by player 1
      * @param   amount  Amount of ETH to be wagered in the match
-     * @param   duration  Duration of match, after which if not joined by another player, the match will expire
      * @return  uint256  Id of the match
      */
-    function createMatch(
-        uint256 amount,
-        uint256 duration
-    ) public payable returns (uint256) {
+    function createMatch(uint256 amount) public payable returns (uint256) {
         require(msg.value >= amount, "Invalid amount");
-        require(duration >= 5 minutes, "Duration must be more than 5 minutes");
 
-        uint256 deadline = block.timestamp + duration;
         uint256 matchId = activeMatches.length;
         activeMatches.push(
-            Match(
-                msg.sender,
-                address(0),
-                address(0),
-                matchId,
-                amount,
-                deadline,
-                false
-            )
+            Match(msg.sender, address(0), address(0), matchId, amount, false)
         );
 
-        emit MatchCreated(msg.sender, amount, matchId, deadline);
+        emit MatchCreated(msg.sender, amount, matchId);
         return matchId;
     }
 
@@ -90,7 +74,6 @@ contract Engine is Owned {
 
         require(msg.sender != m.player1, "Cannot join your own match!");
         require(!m.isFinished, "Match is already finished!");
-        require(block.timestamp <= m.deadline, "Match expired");
         require(msg.value == m.amount, "Invalid entry");
 
         startMatch(_id);
@@ -122,10 +105,8 @@ contract Engine is Owned {
     function cancelMatch(uint256 _id) public {
         Match storage m = activeMatches[_id];
         address p1 = m.player1;
-        uint256 deadline = m.deadline;
 
         require(p1 == msg.sender, "Not the creator");
-        require(deadline < block.timestamp, "Already expired");
 
         (bool sent, ) = p1.call{value: m.amount}("");
         require(sent, "Failed to refund");
