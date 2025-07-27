@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {Owned} from "solmate/auth/Owned.sol";
+import {IVRFSystem} from "./interfaces/IVRFSystem.sol";
 
 contract Engine is Owned {
     event MatchCreated(
@@ -28,20 +29,23 @@ contract Engine is Owned {
     /* -------------------------------------------------------------------------- */
     /*                                STATE VARIABLES                             */
     /* -------------------------------------------------------------------------- */
+    IVRFSystem vrfSystem;
+
     uint8 public fee;
     uint8 public constant MAX_FEE = 3;
 
     uint256 public totalFlips;
-
     uint256 public feeCollected;
+    address public feeRecipient;
 
     Match[] internal activeMatches;
 
     /* -------------------------------------------------------------------------- */
     /*                                 CONSTRUCTOR                                */
     /* -------------------------------------------------------------------------- */
-    constructor(uint8 _fee) Owned(msg.sender) {
+    constructor(uint8 _fee, address _vrfSystem) Owned(msg.sender) {
         fee = _fee;
+        vrfSystem = IVRFSystem(_vrfSystem);
     }
 
     /* -------------------------------------------------------------------------- */
@@ -97,19 +101,10 @@ contract Engine is Owned {
 
         m.player2 = msg.sender;
 
-        // temporary: convert to vrf randomness
-        uint256 result = uint256(
-            keccak256(
-                abi.encodePacked(
-                    block.timestamp,
-                    block.prevrandao,
-                    m.player1,
-                    m.player2
-                )
-            )
-        ) % 2;
+        uint256 randomNumber = vrfSystem.requestRandomNumberWithTraceId(0);
+        uint256 rand = randomNumber % 2;
 
-        address winner = result == 0 ? m.player1 : m.player2;
+        address winner = rand == 0 ? m.player1 : m.player2;
         m.winner = winner;
         m.isFinished = true;
 
