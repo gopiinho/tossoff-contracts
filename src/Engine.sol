@@ -2,9 +2,10 @@
 pragma solidity ^0.8.20;
 
 import {Owned} from "solmate/auth/Owned.sol";
+import {ReentrancyGuard} from "solmate/utils/ReentrancyGuard.sol";
 import {IVRFSystem} from "./interfaces/IVRFSystem.sol";
 
-contract Engine is Owned {
+contract Engine is Owned, ReentrancyGuard {
     event MatchCreated(
         address indexed creator,
         uint256 indexed amount,
@@ -55,7 +56,9 @@ contract Engine is Owned {
      * @param   amount  Amount of ETH to be wagered in the match
      * @return  uint256  Id of the match
      */
-    function createMatch(uint256 amount) public payable returns (uint256) {
+    function createMatch(
+        uint256 amount
+    ) public payable nonReentrant returns (uint256) {
         require(msg.value >= amount, "Invalid amount");
 
         uint256 matchId = activeMatches.length;
@@ -67,7 +70,7 @@ contract Engine is Owned {
         return matchId;
     }
 
-    function joinMatch(uint256 _id) public payable {
+    function joinMatch(uint256 _id) public payable nonReentrant {
         require(_id < activeMatches.length, "Match does not exist!");
 
         Match storage m = activeMatches[_id];
@@ -102,7 +105,7 @@ contract Engine is Owned {
         emit MatchFinished(_id, winner);
     }
 
-    function cancelMatch(uint256 _id) public {
+    function cancelMatch(uint256 _id) public nonReentrant {
         Match storage m = activeMatches[_id];
         address p1 = m.player1;
 
