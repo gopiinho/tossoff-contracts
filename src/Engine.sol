@@ -110,8 +110,8 @@ contract Engine is Owned, ReentrancyGuard, IVRFSystemCallback {
     function randomNumberCallback(uint requestId, uint randomNumber) external override {
         require(msg.sender == address(vrfSystem), Errors.INVALID_VRF_CALLER);
 
-        uint matchId = requestIdToMatchId[requestId];
-        Match storage m = matches[matchId];
+        uint matchId     = requestIdToMatchId[requestId];
+        Match storage m  = matches[matchId];
         require(m.status == MatchStatus.ACTIVE, Errors.MATCH_NOT_ACTIVE);
 
         uint finalRandom = uint(
@@ -120,7 +120,7 @@ contract Engine is Owned, ReentrancyGuard, IVRFSystemCallback {
         uint coinFlip = finalRandom % 2;
 
         address winner = coinFlip == 0 ? m.player1 : m.player2;
-        address loser = coinFlip == 0 ? m.player2 : m.player1;
+        address loser  = coinFlip == 0 ? m.player2 : m.player1;
 
         m.winner = winner;
         m.status = MatchStatus.FINISHED;
@@ -129,8 +129,8 @@ contract Engine is Owned, ReentrancyGuard, IVRFSystemCallback {
         playerLosses[loser]++;
         totalFlips++;
 
-        uint totalPot = m.amount * 2;
-        uint appFee = (totalPot * fee) / 100;
+        uint totalPot    = m.amount * 2;
+        uint appFee      = (totalPot * fee) / 100;
         uint finalPayout = totalPot - appFee;
 
         feeCollected += appFee;
@@ -139,7 +139,6 @@ contract Engine is Owned, ReentrancyGuard, IVRFSystemCallback {
         require(sent, Errors.FAILED_TO_SEND_WINNINGS);
 
         delete requestIdToMatchId[requestId];
-
         emit MatchFinished(matchId, winner, finalRandom);
     }
 
