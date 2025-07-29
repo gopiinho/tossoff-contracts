@@ -15,4 +15,5 @@ library Errors {
     string public constant FAILED_TO_SEND_WINNINGS = "Failed to send winnings";
     string public constant FAILED_TO_REFUND        = "Failed to refund";
     string public constant MAX_FEE_EXCEEDED        = "Cannot exceed max fee";
+    string public constant MINIMUM_BET_EXCEEDED    = "Cannot bet less than 0.0001 ETH";
 }

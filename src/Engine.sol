@@ -35,6 +35,7 @@ contract Engine is Owned, ReentrancyGuard, IVRFSystemCallback {
 
     uint8 public fee;
     uint8 public constant MAX_FEE = 3;
+    uint  public constant MIN_BET = 0.0001 ether;
 
     uint    public nextMatchId;
     uint    public totalFlips;
@@ -70,6 +71,7 @@ contract Engine is Owned, ReentrancyGuard, IVRFSystemCallback {
     /*                                    MATCHES                                 */
     /* -------------------------------------------------------------------------- */
     function createMatch() public payable nonReentrant returns (uint) {
+        require (msg.value >= MIN_BET, Errors.MINIMUM_BET_EXCEEDED);
         uint matchId = nextMatchId++;
 
         matches[matchId] = Match({
@@ -156,6 +158,10 @@ contract Engine is Owned, ReentrancyGuard, IVRFSystemCallback {
         emit MatchCancelled(_matchId);
     }
 
+     function getMatch(uint _matchId) external view returns (Match memory) {
+        return matches[_matchId];
+    }
+
     function claimFee() external onlyOwner {
         uint amount  = feeCollected;
         feeCollected = 0;
@@ -163,4 +169,5 @@ contract Engine is Owned, ReentrancyGuard, IVRFSystemCallback {
         (bool sent, ) = owner.call{value: amount}("");
         require(sent, Errors.FAILED_TO_SEND_WINNINGS);
     }
+
 }
