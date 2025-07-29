@@ -62,4 +62,24 @@ contract EngineTest is Test {
         assertEq(uint(status), uint(Engine.MatchStatus.ACTIVE)); 
     }
 
+    function testCancelMatch() public {
+        vm.startPrank(user1);
+        uint256 matchId = engine.createMatch{value: betAmount}();
+        vm.stopPrank();
+
+        (address player1Before, , , uint amountBefore, , Engine.MatchStatus statusBefore) = engine.matches(matchId);
+
+        assertEq(player1Before, user1);
+        assertEq(amountBefore, betAmount);
+        assertEq(uint(statusBefore), uint(Engine.MatchStatus.WAITING)); 
+
+        vm.startPrank(user1);
+        engine.cancelMatch(matchId);
+        vm.stopPrank();
+
+        (, , , , , Engine.MatchStatus statusAfter) = engine.matches(matchId);
+
+        assertEq(uint(statusAfter), uint(Engine.MatchStatus.CANCELLED));
+    }
+
 }
