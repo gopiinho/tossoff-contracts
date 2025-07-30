@@ -43,6 +43,9 @@ contract EngineTest is Test {
         new Engine(4, address(mockVRF)); 
     }
 
+    /* -------------------------------------------------------------------------- */
+    /*                                  Matches                                   */
+    /* -------------------------------------------------------------------------- */
     function testCreateMatchBelowMinimumBet() public {
         vm.startPrank(user1);
         vm.expectRevert(bytes(Errors.MINIMUM_BET_EXCEEDED));
@@ -196,7 +199,9 @@ contract EngineTest is Test {
         vm.stopPrank();
     }
 
-    // === STATISTICS TESTS ===
+    /* -------------------------------------------------------------------------- */
+    /*                                    Stats                                   */
+    /* -------------------------------------------------------------------------- */
     function testPlayerStatistics() public {
         vm.startPrank(user1);
         uint256 matchId = engine.createMatch{value: betAmount}();
@@ -217,7 +222,9 @@ contract EngineTest is Test {
         assertEq(engine.totalFlips(), 1);
     }
 
-    // === FEE CLAIMING TESTS ===
+    /* -------------------------------------------------------------------------- */
+    /*                                FEE CLAIM                                   */
+    /* -------------------------------------------------------------------------- */
     function testClaimFeeByNonOwner() public {
         vm.startPrank(user1);
         vm.expectRevert("UNAUTHORIZED");
@@ -235,7 +242,6 @@ contract EngineTest is Test {
     }
 
     function testClaimFeeAfterMatches() public {
-        // Complete a match to generate fees
         vm.startPrank(user1);
         uint256 matchId = engine.createMatch{value: betAmount}();
         vm.stopPrank();
@@ -259,7 +265,9 @@ contract EngineTest is Test {
         vm.stopPrank();
     }
 
-    // === EDGE CASES ===
+    /* -------------------------------------------------------------------------- */
+    /*                                 Edge Cases                                 */
+    /* -------------------------------------------------------------------------- */
     function testMatchInvalidStatus() public {
         vm.startPrank(user1);
         engine.createMatch{value: betAmount}();
