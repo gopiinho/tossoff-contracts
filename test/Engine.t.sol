@@ -262,7 +262,7 @@ contract EngineTest is Test {
     // === EDGE CASES ===
     function testMatchInvalidStatus() public {
         vm.startPrank(user1);
-        uint256 matchId = engine.createMatch{value: betAmount}();
+        engine.createMatch{value: betAmount}();
         vm.stopPrank();
 
         vm.startPrank(address(mockVRF));
