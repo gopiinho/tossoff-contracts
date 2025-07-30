@@ -87,7 +87,7 @@ contract Engine is Owned, ReentrancyGuard, IVRFSystemCallback {
         return matchId;
     }
 
-    function joinMatch(uint _id) public payable nonReentrant {
+    function joinMatch(uint _id) public payable validMatch(_id) nonReentrant {
         Match storage m = matches[_id];
 
         require(msg.sender != m.player1,           Errors.CANNOT_JOIN_OWN_MATCH);
