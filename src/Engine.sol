@@ -61,7 +61,7 @@ contract Engine is Owned, ReentrancyGuard, IVRFSystemCallback {
     /* -------------------------------------------------------------------------- */
     constructor(uint8 _fee, address _vrfSystem) Owned(msg.sender) {
         require(_vrfSystem != address(0), Errors.ZERO_ADDRESS);
-        require(fee <= MAX_FEE,           Errors.MAX_FEE_EXCEEDED);
+        require(_fee <= MAX_FEE,           Errors.MAX_FEE_EXCEEDED);
 
         fee       = _fee;
         vrfSystem = IVRFSystem(_vrfSystem);
