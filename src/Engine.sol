@@ -5,9 +5,23 @@ import {Owned}              from "solmate/auth/Owned.sol";
 import {ReentrancyGuard}    from "solmate/utils/ReentrancyGuard.sol";
 import {IVRFSystem}         from "./interfaces/IVRFSystem.sol";
 import {IVRFSystemCallback} from "./interfaces/IVRFSystemCallback.sol";
-import {Errors}             from "./utils/Errors.sol";
 
 contract Engine is Owned, ReentrancyGuard, IVRFSystemCallback {
+    error NOT_OWNER();
+    error ZERO_ADDRESS(); 
+    error INVALID_VRF_CALLER();
+    error INVALID_ENTRY();
+    error MATCH_NOT_EXIST();
+    error MATCH_NOT_AVAILABLE();
+    error MATCH_NOT_ACTIVE();
+    error CANNOT_JOIN_OWN_MATCH();
+    error CANNOT_CANCEL_ACTIVE();
+    error ONLY_CREATOR_CAN_CANCEL();
+    error FAILED_TO_SEND_WINNINGS();
+    error FAILED_TO_REFUND();
+    error MAX_FEE_EXCEEDED();
+    error MINIMUM_BET_EXCEEDED();
+
     event MatchCreated        (address indexed creator, uint indexed amount, uint indexed matchId);
     event MatchFinished       (uint indexed matchId, address indexed winner, uint randomNumber);
     event RandomnessRequested (uint indexed matchId, uint indexed requestId);
@@ -52,7 +66,7 @@ contract Engine is Owned, ReentrancyGuard, IVRFSystemCallback {
     /*                                  MODIFIERS                                 */
     /* -------------------------------------------------------------------------- */
     modifier validMatch(uint _matchId) {
-        require(_matchId < nextMatchId, Errors.MATCH_NOT_EXIST);
+        require(_matchId < nextMatchId, MATCH_NOT_EXIST());
         _;
     }
 
@@ -60,8 +74,8 @@ contract Engine is Owned, ReentrancyGuard, IVRFSystemCallback {
     /*                                 CONSTRUCTOR                                */
     /* -------------------------------------------------------------------------- */
     constructor(uint8 _fee, address _vrfSystem) Owned(msg.sender) {
-        require(_vrfSystem != address(0), Errors.ZERO_ADDRESS);
-        require(_fee <= MAX_FEE,           Errors.MAX_FEE_EXCEEDED);
+        require(_vrfSystem != address(0), ZERO_ADDRESS());
+        require(_fee <= MAX_FEE,          MAX_FEE_EXCEEDED());
 
         fee       = _fee;
         vrfSystem = IVRFSystem(_vrfSystem);
@@ -71,7 +85,7 @@ contract Engine is Owned, ReentrancyGuard, IVRFSystemCallback {
     /*                                    MATCHES                                 */
     /* -------------------------------------------------------------------------- */
     function createMatch() public payable nonReentrant returns (uint) {
-        require (msg.value >= MIN_BET, Errors.MINIMUM_BET_EXCEEDED);
+        require (msg.value >= MIN_BET, MINIMUM_BET_EXCEEDED());
         uint matchId = nextMatchId++;
 
         matches[matchId] = Match({
@@ -90,9 +104,9 @@ contract Engine is Owned, ReentrancyGuard, IVRFSystemCallback {
     function joinMatch(uint _id) public payable validMatch(_id) nonReentrant {
         Match storage m = matches[_id];
 
-        require(msg.sender != m.player1,           Errors.CANNOT_JOIN_OWN_MATCH);
-        require(m.status   == MatchStatus.WAITING, Errors.MATCH_NOT_AVAILABLE);
-        require(msg.value  == m.amount,            Errors.INVALID_ENTRY);
+        require(msg.sender != m.player1,           CANNOT_JOIN_OWN_MATCH());
+        require(m.status   == MatchStatus.WAITING, MATCH_NOT_AVAILABLE());
+        require(msg.value  == m.amount,            INVALID_ENTRY());
 
         m.player2 = msg.sender;
         m.status  = MatchStatus.ACTIVE;
@@ -110,11 +124,11 @@ contract Engine is Owned, ReentrancyGuard, IVRFSystemCallback {
     }
 
     function randomNumberCallback(uint requestId, uint randomNumber) external override {
-        require(msg.sender == address(vrfSystem), Errors.INVALID_VRF_CALLER);
+        require(msg.sender == address(vrfSystem), INVALID_VRF_CALLER());
 
         uint matchId     = requestIdToMatchId[requestId];
         Match storage m  = matches[matchId];
-        require(m.status == MatchStatus.ACTIVE, Errors.MATCH_NOT_ACTIVE);
+        require(m.status == MatchStatus.ACTIVE, MATCH_NOT_ACTIVE());
 
         uint finalRandom = uint(
             keccak256(abi.encodePacked(requestId, randomNumber))
@@ -138,7 +152,7 @@ contract Engine is Owned, ReentrancyGuard, IVRFSystemCallback {
         feeCollected += appFee;
 
         (bool sent, ) = winner.call{value: finalPayout}("");
-        require(sent, Errors.FAILED_TO_SEND_WINNINGS);
+        require(sent, FAILED_TO_SEND_WINNINGS());
 
         delete requestIdToMatchId[requestId];
         emit MatchFinished(matchId, winner, finalRandom);
@@ -147,13 +161,13 @@ contract Engine is Owned, ReentrancyGuard, IVRFSystemCallback {
     function cancelMatch(uint _matchId) external nonReentrant validMatch(_matchId) {
         Match storage m = matches[_matchId];
 
-        require(msg.sender == m.player1,           Errors.ONLY_CREATOR_CAN_CANCEL);
-        require(m.status   == MatchStatus.WAITING, Errors.CANNOT_CANCEL_ACTIVE);
+        require(msg.sender == m.player1,           ONLY_CREATOR_CAN_CANCEL());
+        require(m.status   == MatchStatus.WAITING, CANNOT_CANCEL_ACTIVE());
 
         m.status = MatchStatus.CANCELLED;
 
         (bool sent, ) = m.player1.call{value: m.amount}("");
-        require(sent, Errors.FAILED_TO_REFUND);
+        require(sent, FAILED_TO_REFUND());
 
         emit MatchCancelled(_matchId);
     }
@@ -167,7 +181,7 @@ contract Engine is Owned, ReentrancyGuard, IVRFSystemCallback {
         feeCollected = 0;
 
         (bool sent, ) = owner.call{value: amount}("");
-        require(sent, Errors.FAILED_TO_SEND_WINNINGS);
+        require(sent, FAILED_TO_SEND_WINNINGS());
     }
 
 }
