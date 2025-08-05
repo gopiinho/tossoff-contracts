@@ -141,15 +141,19 @@ contract Engine is Owned, ReentrancyGuard, IVRFSystemCallback {
         m.winner = winner;
         m.status = MatchStatus.FINISHED;
 
-        playerWins[winner]++;
-        playerLosses[loser]++;
-        totalFlips++;
-
+        unchecked {
+            ++playerWins[winner];
+            ++playerLosses[loser];
+            ++totalFlips;
+        }
+       
         uint totalPot    = m.amount * 2;
         uint appFee      = (totalPot * fee) / 100;
         uint finalPayout = totalPot - appFee;
 
-        feeCollected += appFee;
+        unchecked {
+            feeCollected += appFee;
+        }
 
         (bool sent, ) = winner.call{value: finalPayout}("");
         require(sent, FailedToSendWinnings());
