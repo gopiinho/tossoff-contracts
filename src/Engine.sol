@@ -147,15 +147,14 @@ contract Engine is Owned, ReentrancyGuard, IVRFSystemCallback {
             ++totalFlips;
         }
        
-        uint totalPot    = m.amount * 2;
-        uint appFee      = (totalPot * fee) / 100;
-        uint finalPayout = totalPot - appFee;
+        uint totalPot = m.amount * 2;
+        uint appFee   = (totalPot * fee) / 100;
 
         unchecked {
             feeCollected += appFee;
         }
 
-        (bool sent, ) = winner.call{value: finalPayout}("");
+        (bool sent, ) = winner.call{value: totalPot - appFee}("");
         require(sent, FailedToSendWinnings());
 
         delete requestIdToMatchId[requestId];
@@ -187,5 +186,4 @@ contract Engine is Owned, ReentrancyGuard, IVRFSystemCallback {
         (bool sent, ) = owner.call{value: amount}("");
         require(sent, FailedToSendWinnings());
     }
-
 }
